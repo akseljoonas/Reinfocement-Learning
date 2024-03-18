@@ -1,18 +1,18 @@
 import threading
-from typing import List, Optional, Union, Dict, Tuple, SupportsFloat
+from typing import Optional, Union, Dict, SupportsFloat
 from collections import defaultdict
 
 import numpy as np
+import os
 from matplotlib import pyplot as plt
 
-from welford import Welford
+from util.welford import Welford
 
 
 class MetricsTracker:
     """
     Author: Matthijs van der Lende (email: m.r.van.der.lende@student.rug.nl).
-    Thread-safe object for recording metrics. Slight abuse of the Singleton pattern similar
-    to how a logging object is designed.
+    Thread-safe object for recording metrics.
     NOTE: Thread-safety means that if you want, you can run each agent concurrently using threads
     and use this object. When an agent running on a thread records a reward/result all other agent threads
     will be blocked. You can also simply train each agent sequentially in a single thread.
@@ -22,10 +22,12 @@ class MetricsTracker:
 
     def __init__(self):
         self._lock = threading.Lock()
-        self._return_aggr = Welford()
+        self._return_aggr: Dict[str, Welford] = {}
         self._return_history: Dict[str, tuple] = defaultdict(lambda: ([], []))
 
-    def plot(self, x_axis_label='Episodes', y_axis_label='Average Return', title="Return History") -> None:
+    def plot(
+        self, x_axis_label="Runs", y_axis_label="Average Return", title="Return History"
+    ) -> None:
         """
         Plot the metrics to a matplotlib figure.
         """
@@ -33,12 +35,16 @@ class MetricsTracker:
             fig, ax = plt.subplots(figsize=(10, 8))
 
             for agent_id, (mean_returns, var_returns) in self._return_history.items():
-                x_return = np.linspace(0, len(mean_returns), len(mean_returns), endpoint=False)
-                ax.plot(x_return, mean_returns, label=f'{agent_id} agent')
-                ax.fill_between(x_return,
-                                mean_returns - np.sqrt(var_returns) * 0.1,
-                                mean_returns + np.sqrt(var_returns) * 0.1,
-                                alpha=0.2)
+                x_return = np.linspace(
+                    0, len(mean_returns), len(mean_returns), endpoint=False
+                )
+                ax.plot(x_return, mean_returns, label=f"{agent_id} agent")
+                ax.fill_between(
+                    x_return,
+                    mean_returns - np.sqrt(var_returns) * 0.1,
+                    mean_returns + np.sqrt(var_returns) * 0.1,
+                    alpha=0.2,
+                )
 
             ax.set_title(title)
             ax.set_xlabel(x_axis_label)
@@ -48,9 +54,16 @@ class MetricsTracker:
 
             plt.tight_layout()
             plt.show()
-            plt.savefig('../plots/result.png')
+            # Create directory if it does not exist
+            plot_dir = "../plots"
+            if not os.path.exists(plot_dir):
+                os.makedirs(plot_dir)
 
-    def record_return(self, agent_id: str, return_val: Union[float, int, SupportsFloat]) -> None:
+            plt.savefig("../plots/result.png")
+
+    def record_return(
+        self, agent_id: str, return_val: Union[float, int, SupportsFloat]
+    ) -> None:
         """
         Record a return value for a specific agent.
 
@@ -58,9 +71,12 @@ class MetricsTracker:
         :param return_val: The return value to record.
         """
         with self._lock:
-            self._return_aggr.update_aggr(return_val)
+            if agent_id not in self._return_aggr:
+                self._return_aggr[agent_id] = Welford()
+
+            self._return_aggr[agent_id].update_aggr(return_val)
             mean_returns, variance_returns = self._return_history[agent_id]
-            mean, var = self._return_aggr.get_curr_mean_variance()
+            mean, var = self._return_aggr[agent_id].get_curr_mean_variance()
             mean_returns.append(mean)
             variance_returns.append(var)
 

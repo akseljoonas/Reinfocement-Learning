@@ -1,7 +1,11 @@
 import gymnasium as gym
 
-from cliffwalksim.agents.randomagent import RandomAgent
-from cliffwalksim.agents.tabularagent import TabularAgent
+from agents.randomagent import RandomAgent
+from agents.sarsa import SarsaAgent
+from agents.q_learning import QAgent
+from agents.double_q import DoubleQAgent
+
+from agents.tabularagent import TabularAgent
 
 
 class AgentFactory:
@@ -20,14 +24,15 @@ class AgentFactory:
         """
         obs_space = env.observation_space
         action_space = env.action_space
-
+        lr = 0.25
+        dr = 0.7
         if agent_type == "SARSA":
-            return RandomAgent(obs_space, action_space)    # CHANGE THIS
+            return SarsaAgent(obs_space, action_space, lr, dr)
         elif agent_type == "Q-LEARNING":
-            return RandomAgent(obs_space, action_space)
+            return QAgent(obs_space, action_space, lr, dr)
         elif agent_type == "DOUBLE-Q-LEARNING":
-            return RandomAgent(obs_space, action_space)
+            return DoubleQAgent(obs_space, action_space, lr, dr)
         elif agent_type == "RANDOM":
-            return RandomAgent(obs_space, action_space)
+            return RandomAgent(obs_space, action_space, lr, dr)
 
         raise ValueError("Invalid agent type")

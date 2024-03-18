@@ -8,8 +8,13 @@ class TabularAgent(ABC):
     Agent abstract base class.
     """
 
-    def __init__(self, state_space: gym.spaces.Discrete, action_space: gym.spaces.Discrete, learning_rate=0.1,
-                 discount_rate=0.9):
+    def __init__(
+        self,
+        state_space: gym.spaces.Discrete,
+        action_space: gym.spaces.Discrete,
+        learning_rate=0.1,
+        discount_rate=0.9,
+    ):
         """
         Agent Base Class constructor.
         Assumes discrete gymnasium spaces.
@@ -42,3 +47,12 @@ class TabularAgent(ABC):
         :return an action
         """
         pass
+
+    def epsilon_greedy(self, state, time_step) -> int:
+        epsilon = (
+            1 / (time_step + 0.000001)  # Addition to avoid ZeroDivisionError
+        )
+        if np.random.random() < epsilon:
+            return self.env_action_space.sample()
+        else:
+            return np.argmax(self.q_table[state])
