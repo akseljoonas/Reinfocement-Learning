@@ -1,0 +1,10 @@
+pandas
+scipy 
+matplotlib
+gymnasium [box2d]
+loguru 
+flask 
+torch 
+torchrl
+mujoco == 2.3.7
+imageio 
